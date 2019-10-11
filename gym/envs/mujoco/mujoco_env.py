@@ -99,20 +99,37 @@ class MujocoEnv(gym.Env):
         for _ in range(n_frames):
             self.sim.step()
 
-    def render(self, mode='human'):
+    def render(self, mode='human', with_overlay=False):
         if mode == 'rgb_array':
+            # render viewer
             self._get_viewer().render()
-            # window size used for old mujoco-py:
-            width, height = 500, 500
-            data = self._get_viewer().read_pixels(width, height, depth=False)
-            # original image is upside-down, so flip it
-            return data[::-1, :, :]
+
+            # get rendered image
+            if with_overlay:
+                # get resolution
+                resolution = glfw.get_framebuffer_size(
+                        self._get_viewer().sim._render_context_window.window)
+                width, height = resolution # 1920, 1200
+
+                # read rendered image (with overlay)
+                data = self._get_viewer().read_pixels(width, height, depth=False)
+
+                # original image is upside-down, so flip it
+                return data[::-1, :, :]
+
+            else:
+                # read rendered image (without overlay)
+                data = self._get_viewer()._read_pixels_as_in_window()
+
+                # original image is already flipped (no need to flip again)
+                return data
+
         elif mode == 'human':
             self._get_viewer().render()
 
     def close(self):
         if self.viewer is not None:
-            # self.viewer.finish()
+            self.viewer.finish()
             self.viewer = None
 
     def _get_viewer(self):
